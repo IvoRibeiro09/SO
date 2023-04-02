@@ -20,11 +20,20 @@ int main()
     //leitura de novos clientes
     while(loop == 0)
     {
-        char buffer[1024];
+        char buffer[1024], tamanho[4];
         int fifo = open(fiforeader ,O_RDONLY), n;
         puts("Nova Conexão!!");
 
-        read(fifo, buffer , 1024);
+        read(fifo, tamanho, 4); //tamanho da mensagem 
+        int Nread = atoi(tamanho);
+        char pid[6];
+        read(fifo, pid, 6); // pid do cliente
+        n = read(fifo ,buffer, Nread); //mensagem
+        write(1, pid, 6);
+        printf("\n");
+        write(1, buffer, n);
+        printf("\n");
+
         close(fifo);
     }
 
