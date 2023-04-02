@@ -35,6 +35,10 @@ int main(int argc, char* argv[])
         write(fifo,str_len,strlen(str_len)+1);
         write(1,str_len,strlen(str_len)+1);
         printf("\n");
+        //criar um processo filho para cada cliente 
+        //este pocesso filho ira ter acesso ao pid do cliente e à mensagem recebida do mesmo 
+        //criar um pipe com o nome do pid do filho para que possa ser escrita a informaçao/resultado dos comandos passsados
+        //que vai ser lido e apresentado no terminal do cliente 
 
         close(fifo);
     }
