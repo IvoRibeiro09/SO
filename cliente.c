@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 
         //enviar para o servidor
         char str_len[512];
-        sprintf(str_len,"%4ld%6d",strlen(buffer) ,getpid());
+        sprintf(str_len,"%4ld%6d",strlen(buffer)+1,getpid());
         strcat(str_len, buffer);
         write(fifo,str_len,strlen(str_len)+1);
         write(1,str_len,strlen(str_len)+1);
