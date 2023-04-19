@@ -7,81 +7,94 @@
 #include <stdlib.h>
 #include "mensagem/mensagem.h"
 
+#define BUFFER_SIZE 512
+#define MAX_ARGS_CARACTERS 490
 
-int main(int argc, char* argv[]){
+int digitCount(int n)
+{
+    int count = 0;
+    while(n > 0)
+    {
+        count++;
+        n = n/10;
+    }
+    return count;
+}
+
+
+int main(int argc, char* argv[])
+{
+
     if(argc < 2)
     {
         puts("ERROR few arguments!!!");
         return -1;
     }
+    printf("Running PID %d\n", getpid());
 
-    if(strcmp(argv[1],"execute") == 0 && strcmp(argv[2],"-u") == 0)
+    
+    if(strcmp(argv[1],"execute") == 0 && strcmp(argv[2],"-u") == 0)//executar um so programa
     {   
         int fifo = open("logs",O_WRONLY);
-        puts("Novo cliente !");
-        char buffer[502] = "";
         
         //passar todos os comandos para uma string
         //rever o caso de sejam passados mais argumentos que 502 bytes
-        for (int i = 3; i < argc ; i++)
+        char args_str[MAX_ARGS_CARACTERS] = "";
+        for (int i = 3; i < argc && strlen(args_str) < MAX_ARGS_CARACTERS; i++)
         {
-            strcat(buffer ,argv[i]);
-            if(i < argc-1)strcat(buffer," ");
+            strcat(args_str,argv[i]);
+            if(i < argc-1)strcat(args_str," ");
         }
 
         //enviar para o servidor
-        /*
-        
+        //unificar tudo para que seja efetuada apenas uma escrita
+        char writebuffer[BUFFER_SIZE];
+        snprintf(writebuffer, sizeof(writebuffer), "%03ld%d,%d,%s", strlen(args_str) + 1 + digitCount(getpid()) + 1 + digitCount(argc) + 1 , getpid(), argc, args_str);
+        write(fifo, writebuffer, strlen(writebuffer) + 1);
+        write(1, writebuffer, strlen(writebuffer) + 1);//so para visualizar o que foi enviado
+
+
+        int f;
+        char pid_str[7]; 
+        sprintf(pid_str,"%06d",getpid()); //criar o pipe de leitura que vai ser escrito pelo servidor
+
+        if ((f = mkfifo(pid_str,0666)) < 0) puts("ERRO!!!! pipe ja existe!");
+        //puts("Pipe de leitura aberto!!");
+
+        int readfifo = open(pid_str, O_RDONLY);
+        int n;
+        char bufferleitura[BUFFER_SIZE];
+
+        while((n = read(readfifo, bufferleitura, BUFFER_SIZE)) > 0)
+        {
+            bufferleitura[n] = '\0';
+            printf("%s", bufferleitura);
+            memset(bufferleitura, 0, sizeof(bufferleitura));
+        }
+        close(readfifo);
+
+        close(fifo);
+    }
+    //else outros casos
+    int milisec = 90;
+    printf("Ended in %d ms\n", milisec);
+    return 0;
+}
+
+
+/*
         Mensagem m = malloc(sizeof(Mensagem));
         set_tamanho(m, strlen(buffer)+1);
         set_pid(m, getpid());
 
-        char buffer2[512], buffer3[512];
-        memcpy(buffer2, &m , sizeof(Mensagem));
-        strcat(buffer2,buffer);
-        printf("%s\n",buffer2);
+        char buffer2[512];
+        memcpy(buffer2, &m + argv , sizeof(Mensagem)+ (argc*sizeof(char *)));
+        
         write(fifo, buffer2, sizeof(Mensagem) + strlen(buffer)+1);
         write(1, buffer2, sizeof(Mensagem) + strlen(buffer)+1);
         printf("\n");
         printf("%ld--%d\n", get_tamanho(m), get_pid(m));
         */
-
-        char str_len[512];
-        sprintf(str_len,"%04ld%06d%s",strlen(buffer)+1,getpid(),buffer);
-        write(fifo,str_len,strlen(str_len)+1);
-        puts(str_len);
-        //depois ler uma estrutura
-
-        char pid_str[7];
-        sprintf(pid_str,"%06d",getpid());
-
-        int f;
-
-        if ((f = mkfifo(pid_str,0666)) < 0) puts("ERRO!!!! pipe ja existe!");
-        puts("Pipe de leitura aberto!!");
-
-        int readfifo = open(pid_str, O_RDONLY);
-        int n;
-        char tamanho[5], bufferleitura[512];
-
-        while((n = read(readfifo, tamanho, 4)) > 0)
-        {
-            int Nread = atoi(tamanho);
-            n = read(readfifo, bufferleitura, Nread);
-            printf("Recebido\ntamnaho --> %d\nConteudo --> %s\n",Nread, bufferleitura);
-        }
-        close(readfifo);
-
-
-        //criar um processo filho para cada cliente 
-        //este pocesso filho ira ter acesso ao pid do cliente e à mensagem recebida do mesmo 
-        //criar um pipe com o nome do pid do filho para que possa ser escrita a informaçao/resultado dos comandos passsados
-        //que vai ser lido e apresentado no terminal do cliente 
-
-        close(fifo);
-    }
-    
-}
 
 /*
 
@@ -103,3 +116,35 @@ int main(int argc, char *argv[])
     close(fifo);
     return 0;
 }*/
+
+/*#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main() {
+    int fd[2];
+    int num = 42;
+    int result;
+
+    if (pipe(fd) == -1) {
+        perror("pipe");
+        exit(1);
+    }
+
+    // Escreve o valor do inteiro no pipe
+    if (write(fd[1], &num, sizeof(int)) != sizeof(int)) {
+        perror("write");
+        exit(1);
+    }
+
+    // Lê o valor do inteiro do pipe
+    if (read(fd[0], &result, sizeof(int)) != sizeof(int)) {
+        perror("read");
+        exit(1);
+    }
+
+    printf("Valor lido do pipe: %d\n", result);
+
+    return 0;
+}
+*/
