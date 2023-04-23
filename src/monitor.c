@@ -9,34 +9,32 @@
 #include <stdlib.h>
 #include "mensagem/mensagem.h"
 
-void execute(int pid, int args, char buffer[])
+void execute(int pid, char buffer[])
 {
-    //printf("Execute\nPid --> %d\nBuffer ---> %s\n", pid, buffer);
+    printf("Execute\nPid --> %d\nBuffer ---> %s\n", pid, buffer);
     char pid_str[7]; 
     sprintf(pid_str,"%06d", pid);
 
     int writefifo = open(pid_str, O_WRONLY);
 
-    char str_len[512];
-    sprintf(str_len,"%04ld%s",strlen(buffer)+1, buffer);
-
     char *token = strtok(buffer, " ");
 
-    char *argv[args];
+    char *argv[10];
     int i = 0;
 
-    while (token != NULL && i < 6) {
+    while (token != NULL) {
         argv[i++] = token;
         token = strtok(NULL, " ");
     }
     argv[i++] = NULL;
 
-    dup2(writefifo, 1);//mudar de print do ecra para print no fifo
-
-    execvp(argv[0], argv);//executar os comandos
-
-    close(writefifo);
+    int filho = fork();
     
+    if(filho == 0){
+        dup2(writefifo, 1);//mudar de print do ecra para print no fifo
+        execvp(argv[0], argv);//executar os comandos
+    }
+    close(writefifo);
     _exit(1);
 }
 
@@ -53,23 +51,40 @@ int main(){
 
     char buffer[512], buffer2[503], tamanho[4];
     int n;
+    long int start_sec, start_milisec, end_sec, end_milisec;
 
     while((n = read(fifo, tamanho, 3)) > 0)
     {   
-        puts("Nova Conexão!!"); //alguam coisa foi colocada no pipe
-        
         tamanho[4] = '\0';
-        int Nread = atoi(tamanho), Nargs, pid;
-        n = read(fifo, buffer, Nread);
-        buffer[n] = '\0';
+        int Nread = atoi(tamanho), pid;
+        if(Nread == 0)
+        {
+            puts("FIM de Conexão!!"); //alguam coisa foi colocada no pipe
+            n = read(fifo, tamanho, 3);
+            tamanho[4] = '\0';
+            Nread = atoi(tamanho);
+            n = read(fifo, buffer, Nread);
+            buffer[n] = '\0';
+            
+            sscanf(buffer, "%d,%ld.%ld",&pid, &end_sec, &end_milisec);
 
-        sscanf(buffer, "%d,%d,%[^;]",&pid, &Nargs, buffer2);
-        
-        pid_t filho = fork();
-        if(filho == 0)
-        {   
-            printf("PID %d A EXECUTAR!!!\n",pid);
-            execute(pid, Nargs, buffer2);
+            printf("Ended in %d ms\n", getExecutionTime(start_sec, start_milisec, end_sec, end_milisec));
+        }
+        else
+        {
+            puts("Nova Conexão!!"); //alguam coisa foi colocada no pipe
+            //escrever no ficheiro csv "pid,prog,timestart,timeend(-1)"   
+            n = read(fifo, buffer, Nread);
+            buffer[n] = '\0';
+
+            sscanf(buffer, "%d,%ld.%ld,%[^;]",&pid, &start_sec, &start_milisec, buffer2);
+
+            pid_t filho = fork();
+            if(filho == 0)
+            {   
+                printf("PID %d A EXECUTAR!!!\n",pid);
+                execute(pid, buffer2);
+            }
         }
         
     }
@@ -78,16 +93,13 @@ int main(){
     return 0;
 }
 /*
-        read(fifo, pid_str, 5); // pid do cliente       
-        read(fifo, args, 2); //numero de argumentos
-        */
-        /*
-        Nargs = atoi(args);
-        n = read(fifo ,buffer, Nread); //mensagem
-        printf("Numero de bytes: %d-%d\nPid --> %s\nBuffer ---> %s\n",Nread,n,pid_str, buffer);
-        */
-
-/*
+    read(fifo, pid_str, 5); // pid do cliente       
+    read(fifo, args, 2); //numero de argumentos
+        
+    Nargs = atoi(args);
+    n = read(fifo ,buffer, Nread); //mensagem
+    printf("Numero de bytes: %d-%d\nPid --> %s\nBuffer ---> %s\n",Nread,n,pid_str, buffer);
+    
     char bb[sizeof(Mensagem)], buffer2[512];
     puts("espera que seja escrito no pipe");
     Mensagem m = malloc(sizeof(Mensagem));
@@ -97,19 +109,14 @@ int main(){
         
     memcpy(&m, bb, sizeof(Mensagem));
     char* conteudo ="";// buffer2 + sizeof(Mensagem);
-        printf("Mensagem recebida: tamanho = %ld, pid = %d, texto = %s\n",get_tamanho(m),get_pid(m),conteudo);
-        */
-
-
-
-/*
-        pid_t filho = fork();
-        if(filho == 0)
-        {
-            execute(pid, buffer);
-            _exit(1);
-        }
-        */
+    printf("Mensagem recebida: tamanho = %ld, pid = %d, texto = %s\n",get_tamanho(m),get_pid(m),conteudo);
+    pid_t filho = fork();
+    if(filho == 0)
+    {
+        execute(pid, buffer);
+        _exit(1);
+    }
+*/
 
 
 /*

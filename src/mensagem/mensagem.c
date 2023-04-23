@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include "mensagem.h"
 
+/*
 struct mensagem {
     size_t tamanho;
     pid_t pid;
@@ -27,4 +28,19 @@ pid_t get_pid(Mensagem m){
 
 void set_pid(Mensagem m, pid_t pid){
     m->pid = pid;
+}
+*/
+int digitCount(int n)
+{
+    int count = 0;
+    while(n > 0)
+    {
+        count++;
+        n = n/10;
+    }
+    return count;
+}
+
+int getExecutionTime(long int sec, long int milisec, long int sec_end, long int milisec_end){
+    return (sec_end - sec) * 1000 + (milisec_end - milisec); 
 }
