@@ -2,12 +2,15 @@
 #define MENSAGEM_
 
 #define BUFFER_SIZE 512
+#define MAX_ARGS_CARACTERS 490
 
 int digitCount(int n);
 
 int getExecutionTime(long int sec, long int milisec, long int sec_end, long int milisec_end);
 
+int messageSize(int fifo);
 
+char* fileName(int pid);
 //char* messageWPID(int pid, char* msg);
 /*
 typedef struct mensagem *Mensagem;

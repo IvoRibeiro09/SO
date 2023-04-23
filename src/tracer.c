@@ -13,23 +13,21 @@
 #include <sys/time.h>
 #include <stdio.h>
 
-#define BUFFER_SIZE 512
-#define MAX_ARGS_CARACTERS 490
 
 void sendMessage(int fifo, int pid, long int sec, long int milisec, char *msg){
     char writebuffer[BUFFER_SIZE];
-    snprintf(writebuffer, sizeof(writebuffer), "%03ld%d,%ld.%ld,%s", strlen(msg) + 1 + digitCount(pid) + 1  + digitCount(sec) + 1 + digitCount(milisec) + 1, pid, sec, milisec, msg);
+    snprintf(writebuffer, sizeof(writebuffer), "%d%03ld%d,%ld.%ld,%s", 1, strlen(msg) + 1 + digitCount(pid) + 1  + digitCount(sec) + 1 + digitCount(milisec) + 1, pid, sec, milisec, msg);
     write(fifo, writebuffer, strlen(writebuffer) + 1);
-    write(1, writebuffer, strlen(writebuffer) + 1);//so para visualizar o que foi enviado
-    printf("\nMensagem enviada\n");
+    //write(1, writebuffer, strlen(writebuffer) + 1);//so para visualizar o que foi enviado
+    //printf("\nMensagem enviada\n");
 }
 
 void sendEndMessage(int fifo, int pid,long int sec,long int milisec){
     char writebuffer[BUFFER_SIZE];
-    snprintf(writebuffer, sizeof(writebuffer), "%03d%03d%d,%ld.%ld", 0, digitCount(pid) + 1 + digitCount(sec) + 1 + digitCount(milisec) + 1, pid, sec, milisec);
+    snprintf(writebuffer, sizeof(writebuffer), "%d%03d%d,%ld.%ld", 9, digitCount(pid) + 1 + digitCount(sec) + 1 + digitCount(milisec) + 1, pid, sec, milisec);
     write(fifo, writebuffer, strlen(writebuffer) + 1);
-    write(1, writebuffer, strlen(writebuffer) + 1);//so para visualizar o que foi enviado
-    printf("\nEnd Mensagem enviada\n");
+    //write(1, writebuffer, strlen(writebuffer) + 1);//so para visualizar o que foi enviado
+    //printf("\nEnd Mensagem enviada\n");
 }
 
 int main(int argc, char* argv[])
@@ -43,11 +41,10 @@ int main(int argc, char* argv[])
 
     if(strcmp(argv[1], "execute") == 0)
     {
-        int fifo = open("logs",O_RDWR);
+        int fifo = open("logs",O_RDWR), f;
         struct timeval start, end;
     
-        if(strcmp(argv[2], "-u") == 0)//executar um so programa
-        {   
+        if(strcmp(argv[2], "-u") == 0){//executar um so programa   
             int pid = getpid();
             printf("Running PID %d\n", pid);
             gettimeofday(&start,NULL);
@@ -55,19 +52,14 @@ int main(int argc, char* argv[])
             //unificar tudo para que seja efetuada apenas uma escrita
             sendMessage(fifo, pid, start.tv_sec, start.tv_usec, argv[3]);
 
-            int f;
-            char pid_str[7]; 
-            sprintf(pid_str,"%06d",getpid()); //criar o pipe de leitura que vai ser escrito pelo servidor
-
-            if ((f = mkfifo(pid_str,0666)) < 0) puts("ERRO!!!! pipe ja existe!");
+            if ((f = mkfifo(fileName(pid),0666)) < 0) puts("ERRO!!!! pipe ja existe!");
             //puts("Pipe de leitura aberto!!");
 
-            int readfifo = open(pid_str, O_RDONLY);
+            int readfifo = open(fileName(pid), O_RDONLY);
             int n;
             char bufferleitura[BUFFER_SIZE];
 
-            while((n = read(readfifo, bufferleitura, BUFFER_SIZE)) > 0)
-            {
+            while((n = read(readfifo, bufferleitura, BUFFER_SIZE)) > 0){
                 bufferleitura[n] = '\0';
                 write(1, bufferleitura, strlen(bufferleitura) + 1);
                 memset(bufferleitura, 0, sizeof(bufferleitura));
@@ -79,37 +71,28 @@ int main(int argc, char* argv[])
             sendEndMessage(fifo, pid, end.tv_sec, end.tv_usec);
             printf("Ended in %d ms\n", getExecutionTime(start.tv_sec, start.tv_usec, end.tv_sec, end.tv_usec));
 
-        }
-        else if(strcmp(argv[2], "-p") == 0)//executar mais de um programa
-        {        
+        }else if(strcmp(argv[2], "-p") == 0){//executar mais de um programa      
             char *token = strtok(argv[3], "|");
             int count = 0;
 
-            while(token != NULL)
-            {   
+            while(token != NULL){   
                 count++;
                 int filho = fork();
-                if(filho == 0)
-                {   
+                if(filho == 0){   
                     struct timeval start, end;
                     int pid = getpid();
                     printf("Running PID %d\n", pid);
                     gettimeofday(&start,NULL);
                     sendMessage(fifo, pid, start.tv_sec, start.tv_usec, token);
 
-                    int f;
-                    char pid_str[7]; 
-                    sprintf(pid_str,"%06d",getpid()); //criar o pipe de leitura que vai ser escrito pelo servidor
-
-                    if ((f = mkfifo(pid_str,0666)) < 0) puts("ERRO!!!! pipe ja existe!");
+                    if ((f = mkfifo(fileName(pid),0666)) < 0) puts("ERRO!!!! pipe ja existe!");
                     //puts("Pipe de leitura aberto!!");
 
-                    int readfifo = open(pid_str, O_RDONLY);
+                    int readfifo = open(fileName(pid), O_RDONLY);
                     int n;
                     char bufferleitura[BUFFER_SIZE];
 
-                    while((n = read(readfifo, bufferleitura, BUFFER_SIZE)) > 0)
-                    {
+                    while((n = read(readfifo, bufferleitura, BUFFER_SIZE)) > 0){
                         bufferleitura[n] = '\0';
                         write(1, bufferleitura, strlen(bufferleitura) + 1);
                         //printf("%s", bufferleitura);
@@ -126,19 +109,14 @@ int main(int argc, char* argv[])
                 token = strtok(NULL, "|");
             }
             //esperar a morte dos filhos
-            for (int i = 0; i < count; i++) 
-            {
+            for (int i = 0; i < count; i++){
                 int status;
-                pid_t terminated_pid = wait(&status);
-                printf("Processo %d terminou com status\n", terminated_pid);
+                wait(&status);
             }
         }
         close(fifo);
-        
     }
     //else outros casos
-    
-
     return 0;
 }
 

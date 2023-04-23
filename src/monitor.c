@@ -9,31 +9,37 @@
 #include <stdlib.h>
 #include "mensagem/mensagem.h"
 
-void execute(int pid, char buffer[])
-{
-    printf("Execute\nPid --> %d\nBuffer ---> %s\n", pid, buffer);
-    char pid_str[7]; 
-    sprintf(pid_str,"%06d", pid);
+bool isArgument(char *arg){
+    if(arg[0] == '-') return false;
+    else return true;
+}
 
-    int writefifo = open(pid_str, O_WRONLY);
-
-    char *token = strtok(buffer, " ");
+void execute(int pid, char buffer[]){
+    int writefifo = open(fileName(pid), O_WRONLY);
 
     char *argv[10];
     int i = 0;
-
-    while (token != NULL) {
+    char *token = strtok(buffer, " ");
+    while(token != NULL){
+        
         argv[i++] = token;
         token = strtok(NULL, " ");
-    }
-    argv[i++] = NULL;
+        while(token != NULL && !isArgument(token)){
+            argv[i++] = token;
+            token = strtok(NULL, " ");
+        }
+        argv[i++] = NULL;
 
-    int filho = fork();
-    
-    if(filho == 0){
-        dup2(writefifo, 1);//mudar de print do ecra para print no fifo
-        execvp(argv[0], argv);//executar os comandos
+        int filho = fork();
+
+        if(filho == 0){
+            dup2(writefifo, 1);//mudar de print do ecra para print no fifo
+            execvp(argv[0], argv);//executar os comandos
+        }
+        i = 0;
+        for (int j = 0; j < 10; j++) argv[j] = NULL;
     }
+    
     close(writefifo);
     _exit(1);
 }
@@ -47,44 +53,42 @@ int main(){
 
     //abrir o pipe para leitura
     int fifo = open(fiforeader , O_RDWR);
-    //leitura de novos clientes
 
-    char buffer[512], buffer2[503], tamanho[4];
-    int n;
+    //variaveis
+    char option[2], buffer[BUFFER_SIZE], message[MAX_ARGS_CARACTERS];
+    int NbytesRead, OP, tamanho, pid;
     long int start_sec, start_milisec, end_sec, end_milisec;
 
-    while((n = read(fifo, tamanho, 3)) > 0)
+    while((NbytesRead = read(fifo, option, 1)) > 0)
     {   
-        tamanho[4] = '\0';
-        int Nread = atoi(tamanho), pid;
-        if(Nread == 0)
-        {
-            puts("FIM de Conexão!!"); //alguam coisa foi colocada no pipe
-            n = read(fifo, tamanho, 3);
-            tamanho[4] = '\0';
-            Nread = atoi(tamanho);
-            n = read(fifo, buffer, Nread);
-            buffer[n] = '\0';
-            
-            sscanf(buffer, "%d,%ld.%ld",&pid, &end_sec, &end_milisec);
-
-            printf("Ended in %d ms\n", getExecutionTime(start_sec, start_milisec, end_sec, end_milisec));
-        }
-        else
+        option[NbytesRead] = '\0';
+        OP = atoi(option);
+        if(OP == 1)
         {
             puts("Nova Conexão!!"); //alguam coisa foi colocada no pipe
             //escrever no ficheiro csv "pid,prog,timestart,timeend(-1)"   
-            n = read(fifo, buffer, Nread);
-            buffer[n] = '\0';
 
-            sscanf(buffer, "%d,%ld.%ld,%[^;]",&pid, &start_sec, &start_milisec, buffer2);
+            tamanho = messageSize(fifo);
+            NbytesRead = read(fifo, buffer, tamanho);
+            buffer[NbytesRead] = '\0';
+            sscanf(buffer, "%d,%ld.%ld,%[^;]",&pid, &start_sec, &start_milisec, message);
 
             pid_t filho = fork();
             if(filho == 0)
             {   
                 printf("PID %d A EXECUTAR!!!\n",pid);
-                execute(pid, buffer2);
+                execute(pid, message);
             }
+        }
+        else if(OP == 0)
+        {
+            puts("FIM de Conexão!!"); //alguam coisa foi colocada no pipe
+            tamanho = messageSize(fifo);
+            NbytesRead = read(fifo, buffer, tamanho);
+            buffer[NbytesRead] = '\0';
+            sscanf(buffer, "%d,%ld.%ld",&pid, &end_sec, &end_milisec);
+            //escrever no ficheiro 
+            printf("PID %d TERMINOU!!\nEnded in %d ms\n", pid, getExecutionTime(start_sec, start_milisec, end_sec, end_milisec));
         }
         
     }

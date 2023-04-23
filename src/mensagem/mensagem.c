@@ -44,3 +44,18 @@ int digitCount(int n)
 int getExecutionTime(long int sec, long int milisec, long int sec_end, long int milisec_end){
     return (sec_end - sec) * 1000 + (milisec_end - milisec); 
 }
+
+int messageSize(int fifo){
+    char tamanho[4];
+    int n = read(fifo, tamanho, 3);
+    tamanho[n] = '\0';
+    return atoi(tamanho);
+}
+
+char* fileName(int pid){
+    char *pid_str = malloc(7);
+    if (pid_str == NULL)return NULL;
+    sprintf(pid_str, "%06d", pid);
+    pid_str[6] = '\0';
+    return pid_str;
+}
