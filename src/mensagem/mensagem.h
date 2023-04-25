@@ -3,24 +3,20 @@
 
 #define BUFFER_SIZE 512
 #define MAX_ARGS_CARACTERS 490
+#define PIPEGLOBAL "logs"
 
 int digitCount(int n);
 
-int getExecutionTime(long int sec, long int milisec, long int sec_end, long int milisec_end);
+long int getExecutionTime(long int sec, long int milisec, long int sec_end, long int milisec_end);
 
 int messageSize(int fifo);
 
 char* fileName(int pid);
-//char* messageWPID(int pid, char* msg);
-/*
-typedef struct mensagem *Mensagem;
 
-size_t get_tamanho(Mensagem m);
+void sendMessage(int fifo, int pid, long int sec, long int milisec, char *msg);
 
-void set_tamanho(Mensagem m, size_t tamanho);
+void sendEndMessage(int fifo, int pid,long int sec,long int milisec);
 
-pid_t get_pid(Mensagem m);
+void reciveMessage(int fifo);
 
-void set_pid(Mensagem m, pid_t pid);
-*/
 #endif

@@ -8,28 +8,6 @@
 #include <stdlib.h>
 #include "mensagem.h"
 
-/*
-struct mensagem {
-    size_t tamanho;
-    pid_t pid;
-};
-
-size_t get_tamanho(Mensagem m){
-    return m->tamanho;
-}
-
-void set_tamanho(Mensagem m, size_t tamanho){
-    m->tamanho = tamanho;
-}
-
-pid_t get_pid(Mensagem m){
-    return m->pid;
-}
-
-void set_pid(Mensagem m, pid_t pid){
-    m->pid = pid;
-}
-*/
 int digitCount(int n)
 {
     int count = 0;
@@ -41,7 +19,7 @@ int digitCount(int n)
     return count;
 }
 
-int getExecutionTime(long int sec, long int milisec, long int sec_end, long int milisec_end){
+long int getExecutionTime(long int sec, long int milisec, long int sec_end, long int milisec_end){
     return (sec_end - sec) * 1000 + (milisec_end - milisec); 
 }
 
@@ -58,4 +36,30 @@ char* fileName(int pid){
     sprintf(pid_str, "%06d", pid);
     pid_str[6] = '\0';
     return pid_str;
+}
+
+void sendMessage(int fifo, int pid, long int sec, long int milisec, char *msg){
+    char writebuffer[BUFFER_SIZE];
+    snprintf(writebuffer, sizeof(writebuffer), "%d%03ld%d,%ld.%ld,%s", 1, strlen(msg) + 1 + digitCount(pid) + 1  + digitCount(sec) + 1 + digitCount(milisec) + 1, pid, sec, milisec, msg);
+    write(fifo, writebuffer, strlen(writebuffer) + 1);
+    //write(1, writebuffer, strlen(writebuffer) + 1);//so para visualizar o que foi enviado
+    //printf("\nMensagem enviada\n");
+}
+
+void sendEndMessage(int fifo, int pid,long int sec,long int milisec){
+    char writebuffer[BUFFER_SIZE];
+    snprintf(writebuffer, sizeof(writebuffer), "%d%03d%d,%ld.%ld", 9, digitCount(pid) + 1 + digitCount(sec) + 1 + digitCount(milisec) + 1, pid, sec, milisec);
+    write(fifo, writebuffer, strlen(writebuffer) + 1);
+    //write(1, writebuffer, strlen(writebuffer) + 1);//so para visualizar o que foi enviado
+    //printf("\nEnd Mensagem enviada\n");
+}
+
+void reciveMessage(int fifo){
+    char bufferleitura[BUFFER_SIZE];
+    int NbytesRead;
+    while((NbytesRead = read(fifo, bufferleitura, BUFFER_SIZE)) > 0){
+        bufferleitura[NbytesRead] = '\0';
+        write(1, bufferleitura, strlen(bufferleitura) + 1);
+        memset(bufferleitura, 0, sizeof(bufferleitura));
+    }
 }
