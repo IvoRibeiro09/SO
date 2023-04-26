@@ -13,7 +13,7 @@ int messageSize(int fifo);
 
 char* fileName(int pid);
 
-void sendMessage(int fifo, int pid, long int sec, long int milisec, char *msg);
+void sendMessage(int fifo, int tipo, int pid, long int sec, long int milisec, char *msg);
 
 void sendEndMessage(int fifo, int pid,long int sec,long int milisec);
 

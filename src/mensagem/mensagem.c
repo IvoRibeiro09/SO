@@ -14,13 +14,13 @@ int digitCount(int n)
     while(n > 0)
     {
         count++;
-        n = n/10;
+        n = n/10; 
     }
     return count;
 }
 
 long int getExecutionTime(long int sec, long int milisec, long int sec_end, long int milisec_end){
-    return (sec_end - sec) * 1000 + (milisec_end - milisec); 
+    return (sec_end - sec) * 1000 + (milisec_end - milisec) / 1000; 
 }
 
 int messageSize(int fifo){
@@ -38,9 +38,9 @@ char* fileName(int pid){
     return pid_str;
 }
 
-void sendMessage(int fifo, int pid, long int sec, long int milisec, char *msg){
+void sendMessage(int fifo, int tipo, int pid, long int sec, long int milisec, char *msg){
     char writebuffer[BUFFER_SIZE];
-    snprintf(writebuffer, sizeof(writebuffer), "%d%03ld%d,%ld.%ld,%s", 1, strlen(msg) + 1 + digitCount(pid) + 1  + digitCount(sec) + 1 + digitCount(milisec) + 1, pid, sec, milisec, msg);
+    snprintf(writebuffer, sizeof(writebuffer), "%d%03ld%d,%ld.%ld,%s", tipo, strlen(msg) + 1 + digitCount(pid) + 1  + digitCount(sec) + 1 + digitCount(milisec) + 1, pid, sec, milisec, msg);
     write(fifo, writebuffer, strlen(writebuffer) + 1);
     //write(1, writebuffer, strlen(writebuffer) + 1);//so para visualizar o que foi enviado
     //printf("\nMensagem enviada\n");

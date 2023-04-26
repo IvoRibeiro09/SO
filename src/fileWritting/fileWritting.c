@@ -50,7 +50,6 @@ void printFile(){
         exit(1);
     }
     char linha[300];
-    puts("dados");
     while(fgets(linha, 300, fp) != NULL){
         write(1, linha, strlen(linha)+1);
     }

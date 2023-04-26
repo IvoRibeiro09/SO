@@ -13,9 +13,22 @@
 void sendStatus(int fifo, int pid){
     char buffer[BUFFER_SIZE];
     
-    snprintf(buffer, sizeof(buffer), "%d%03d%d", 2, digitCount(pid) + 1, pid);
+    snprintf(buffer, sizeof(buffer), "%d%03d%d", 3, digitCount(pid) + 1, pid);
     write(fifo, buffer, strlen(buffer) + 1);
     
+}
+
+void reciveStatus(int fifo){
+
+    int NbytesRead;
+    char tamanho[4], buffer[BUFFER_SIZE];
+    while((NbytesRead = read(fifo, tamanho, 3)) > 0){
+        tamanho[NbytesRead] = '\0';
+        int tam = atoi(tamanho);
+        NbytesRead = read(fifo, buffer, tam);
+        buffer[NbytesRead] = '\0';
+        write(1, buffer, strlen(buffer) + 1);
+    }
 }
 
 int main(int argc, char* argv[]){
@@ -29,62 +42,30 @@ int main(int argc, char* argv[]){
 
     if(strcmp(argv[1], "execute") == 0){
         struct timeval start, end;
-    
-        if(strcmp(argv[2], "-u") == 0){//executar um so programa   
-            int pid = getpid();
-            printf("Running PID %d\n", pid);
-            gettimeofday(&start,NULL);
-            //enviar para o servidor
-            //unificar tudo para que seja efetuada apenas uma escrita
-            sendMessage(fifo, pid, start.tv_sec, start.tv_usec, argv[3]);
+        int pid = getpid();
+        gettimeofday(&start, NULL);
 
-            if ((f = mkfifo(fileName(pid),0666)) < 0) puts("ERRO!!!! pipe ja existe!");
-            //puts("Pipe de leitura aberto!!");
-
-            int readfifo = open(fileName(pid), O_RDONLY);
-            reciveMessage(readfifo);
-            close(readfifo);
+        if ((f = mkfifo(fileName(pid),0666)) < 0) puts("ERRO!!!! pipe ja existe!");
+        
+        int tipo;
+        if(strcmp(argv[2], "-u") == 0) tipo = 1;//executar um so programa   
+        else if(strcmp(argv[2], "-p") == 0) tipo = 2;//executar varios 
             
-            //end
-            gettimeofday(&end,NULL);
-            sendEndMessage(fifo, pid, end.tv_sec, end.tv_usec);
-            printf("Ended in %ld ms\n", getExecutionTime(start.tv_sec, start.tv_usec, end.tv_sec, end.tv_usec));
+        printf("Running PID %d\n", pid);
+        //enviar para o servidor
+        //unificar tudo para que seja efetuada apenas uma escrita
+        sendMessage(fifo, tipo, pid, start.tv_sec, start.tv_usec, argv[3]);
 
-        }else if(strcmp(argv[2], "-p") == 0){//executar mais de um programa      
-            char *token = strtok(argv[3], "|");
-            int count = 0;
-
-            while(token != NULL){   
-                count++;
-                int filho = fork();
-                if(filho == 0){   
-                    struct timeval start, end;
-                    int pid = getpid();
-                    printf("Running PID %d\n", pid);
-                    gettimeofday(&start,NULL);
-                    sendMessage(fifo, pid, start.tv_sec, start.tv_usec, token);
-
-                    if ((f = mkfifo(fileName(pid),0666)) < 0) puts("ERRO!!!! pipe ja existe!");
-                    //puts("Pipe de leitura aberto!!");
-
-                    int readfifo = open(fileName(pid), O_RDONLY);
-                    reciveMessage(readfifo);
-                    close(readfifo);
-                    
-                    gettimeofday(&end,NULL);
-                    sendEndMessage(fifo, pid, end.tv_sec, end.tv_usec);
-                    printf("Ended in %ld ms\n", getExecutionTime(start.tv_sec, start.tv_usec, end.tv_sec, end.tv_usec));
-                    _exit(1);
-                }
-
-                token = strtok(NULL, "|");
-            }
-            //esperar a morte dos filhos
-            for (int i = 0; i < count; i++){
-                int status;
-                wait(&status);
-            }
-        }
+        //ler do servidor 
+        int readfifo = open(fileName(pid), O_RDONLY);
+        reciveMessage(readfifo);
+        close(readfifo);
+            
+        //end
+        gettimeofday(&end, NULL);
+        sendEndMessage(fifo, pid, end.tv_sec, end.tv_usec);
+        printf("Ended in %ld ms\n", getExecutionTime(start.tv_sec, start.tv_usec, end.tv_sec, end.tv_usec));
+       
     }else if(strcmp(argv[1], "status") == 0){
         int pid = getpid();
         if ((f = mkfifo(fileName(pid),0666)) < 0) puts("ERRO!!!! pipe ja existe!");
@@ -93,7 +74,7 @@ int main(int argc, char* argv[]){
         sendStatus(fifo, pid);
 
         int readfifo = open(fileName(pid), O_RDONLY);
-        reciveMessage(readfifo);
+        reciveStatus(readfifo);
         close(readfifo);
 
     }
