@@ -11,59 +11,10 @@
 #include "mensagem/mensagem.h"
 #include "fileWritting/fileWritting.h"
 
-char* cleanArguments(char* string){
-  char buffer[20];
-  if(string[0] == ' '){
-    for(int i =0;i<strlen(string);i++){
-      buffer[i]=string[i+1];
-    }
-  }
-  if(buffer[strlen(buffer)-1] == ' '){
-    buffer[strlen(buffer)-1] = buffer[strlen(buffer)];
-  }
-  return strdup(buffer);
-}
-
-void activity(int pid){
-    int writefifo = open(fileName(pid), O_WRONLY);
-
-    FILE *fp = fopen("dados.csv", "r");
-    if (fp == NULL) {
-        printf("Erro ao abrir arquivo\n");
-        exit(1);
-    }
-
-    char linha[300];
-    struct timeval now;
-    gettimeofday(&now,NULL);
-    while (fgets(linha, 300, fp) != NULL){
-        char buffer[300];
-        int pid_atual;
-        char msg[100];
-        long int st_sec, st_milisec, end_sec, end_milisec;
-        sscanf(linha,"%d,%[^,],%ld,%ld,%ld,%ld", &pid_atual, msg, &st_sec, &st_milisec, &end_sec, &end_milisec);
-        if (end_sec < 0){
-            int exectime = getExecutionTime(st_sec, st_milisec, now.tv_sec, now.tv_usec);
-            snprintf(buffer, sizeof(buffer), "%03ld%d %s %d ms\n", digitCount(pid_atual) + 1 + strlen(msg) + 1 + digitCount(exectime) + 5,pid_atual, msg, exectime);
-            write(writefifo, buffer, strlen(buffer) + 1);
-        }
-    }
-    fclose(fp);
-    close(writefifo);
-}
-
-int get_pid(int fifo, int tamanho){
-    char pid[tamanho];
-    int n = read(fifo, pid, tamanho);
-    pid[n] = '\0';
-    return atoi(pid);
-}
-
-//refazer pq so executa um programa por vez
 void execute(int fifo, char buffer[]){
     
     //trocar o 10 para uma funçao que conta o numero de espaços
-    char *argv[10];
+    char *argv[numberSpaces(buffer) + 1];
     int i = 0;
     char *token = strtok(buffer, " ");
     while(token != NULL){
@@ -81,7 +32,16 @@ void execute(int fifo, char buffer[]){
     }
 }
 
-int main(){
+int main(int argc, char* argv[]){
+
+    if(argc < 3){
+        puts("ERROR few arguments!!!");
+        return -1;
+    }
+    char* datafile = argv[1];
+    char* tempfile = argv[2];
+    if(openFile(datafile) < 0 || openFile(tempfile) < 0) return -1;
+
     int f;
     if ((f = mkfifo(PIPEGLOBAL, 0666)) < 0) puts("ficheiro ja existe!");
     puts("Servidor aberto!!");
@@ -91,8 +51,8 @@ int main(){
 
     //variaveis
     char option[2], buffer[BUFFER_SIZE], message[MAX_ARGS_CARACTERS];
-    int NbytesRead, OP, tamanho, pid;
-    long int start_sec, start_milisec, end_sec, end_milisec;
+    int NbytesRead, OP, tamanho;
+    //long int start_sec, start_milisec, end_sec, end_milisec;
 
     while((NbytesRead = read(fifo, option, 1)) > 0){   
         option[NbytesRead] = '\0';
@@ -105,9 +65,10 @@ int main(){
 
             pid_t filho = fork();
             if(filho == 0){
-
+                int pid;
+                long int start_sec, start_milisec;
                 sscanf(buffer, "%d,%ld.%ld,%[^;]",&pid, &start_sec, &start_milisec, message);
-                writeLine(pid, message, start_sec, start_milisec);
+                writeLine(pid, tempfile, cleanArguments(message), start_sec, start_milisec);
 
                 //abrir o pipe de escrita
                 int writefifo = open(fileName(pid), O_WRONLY);
@@ -115,7 +76,7 @@ int main(){
                 if(OP == 1){//execuçao unica       
                     
                     printf("PID %d A EXECUTAR!!!\n",pid);
-                    execute(pid, message);
+                    execute(writefifo, message);
                     
                 }else{//pipeline
 
@@ -145,24 +106,31 @@ int main(){
             puts("STATUS");
             tamanho = messageSize(fifo);
             int pid = get_pid(fifo, tamanho);
-            activity(pid);
-            printFile();//ver o q esta escrito no file
+            pid_t filho = fork();
+            if(filho == 0){
+                activity(pid, tempfile);
+                printFile(datafile);//ver o q esta escrito no file
+                _exit(1);
+            }
         }else if(OP == 9){
             puts("FIM de Conexão!!"); //alguam coisa foi colocada no pipe
             tamanho = messageSize(fifo);
             NbytesRead = read(fifo, buffer, tamanho);
             buffer[NbytesRead] = '\0';
-
+            printf("%s\n", buffer);
             pid_t filho = fork();
             if(filho == 0){
+                int pid;
+                long int end_sec, end_milisec;
                 sscanf(buffer, "%d,%ld.%ld",&pid, &end_sec, &end_milisec);
 
-                updateLine(pid, end_sec, end_milisec);
+                int time = updateLine(pid, tempfile, datafile, end_sec, end_milisec);//return time
 
-                printf("PID %d TERMINOU!!\nEnded in %ld ms\n", pid, getExecutionTime(start_sec, start_milisec, end_sec, end_milisec));
+                printf("PID %d TERMINOU!!\nEnded in %d ms\n", pid, time);
+                _exit(1);
             }
-        }
-        //printFile();
+        }else puts("ERROR");
+        
     }
     close(fifo);
 

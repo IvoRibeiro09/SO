@@ -19,7 +19,7 @@ int digitCount(int n)
     return count;
 }
 
-long int getExecutionTime(long int sec, long int milisec, long int sec_end, long int milisec_end){
+int getExecutionTime(long int sec, long int milisec, long int sec_end, long int milisec_end){
     return (sec_end - sec) * 1000 + (milisec_end - milisec) / 1000; 
 }
 
@@ -61,5 +61,26 @@ void reciveMessage(int fifo){
         bufferleitura[NbytesRead] = '\0';
         write(1, bufferleitura, strlen(bufferleitura) + 1);
         memset(bufferleitura, 0, sizeof(bufferleitura));
+    }
+}
+
+void sendStatus(int fifo, int pid){
+    char buffer[BUFFER_SIZE];
+    
+    snprintf(buffer, sizeof(buffer), "%d%03d%d", 3, digitCount(pid) + 1, pid);
+    write(fifo, buffer, strlen(buffer) + 1);
+    
+}
+
+void reciveStatus(int fifo){
+
+    int NbytesRead;
+    char tamanho[4], buffer[BUFFER_SIZE];
+    while((NbytesRead = read(fifo, tamanho, 3)) > 0){
+        tamanho[NbytesRead] = '\0';
+        int tam = atoi(tamanho);
+        NbytesRead = read(fifo, buffer, tam);
+        buffer[NbytesRead] = '\0';
+        write(1, buffer, strlen(buffer) + 1);
     }
 }

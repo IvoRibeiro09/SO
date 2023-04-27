@@ -7,7 +7,7 @@
 
 int digitCount(int n);
 
-long int getExecutionTime(long int sec, long int milisec, long int sec_end, long int milisec_end);
+int getExecutionTime(long int sec, long int milisec, long int sec_end, long int milisec_end);
 
 int messageSize(int fifo);
 
@@ -18,5 +18,9 @@ void sendMessage(int fifo, int tipo, int pid, long int sec, long int milisec, ch
 void sendEndMessage(int fifo, int pid,long int sec,long int milisec);
 
 void reciveMessage(int fifo);
+
+void sendStatus(int fifo, int pid);
+
+void reciveStatus(int fifo);
 
 #endif
