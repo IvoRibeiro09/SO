@@ -11,6 +11,66 @@
 #include "mensagem/mensagem.h"
 #include "fileWritting/fileWritting.h"
 
+bool pertence(char** array,char* pid,int n){
+    bool existe = false;
+    for(int i=0;i<n;i++){
+        if(strcmp(array[i],pid)==0){
+            existe = true;
+            break;
+        }
+    }
+  
+    return existe;
+}
+
+int contapid(char* pids){
+    int count = 1;
+    for(int i =0;i<strlen(pids);i++){
+        if(pids[i]==','){
+            count++;
+        }
+    }
+    return count;
+}
+
+char** arraypid(char* p, int n) {
+    char* pids = strdup(p);
+    char** array = malloc((n+1) * sizeof(char*));
+    int i = 0;
+    char* aux = strtok(pids,",");
+    array[i] = aux;
+    while (aux != NULL) {
+        i++;
+        aux = strtok(NULL, ",");
+        array[i] =aux;
+    }
+    return array; 
+}
+
+void timestats(char** array,int n,char* fname,int writefifo){
+    int count = 0;
+
+    FILE *fp = fopen(fname, "r");
+    if (fp == NULL) {
+        printf("Erro ao abrir arquivo\n");
+        exit(1);
+    }
+    char buffer[300];
+    char linha[300];
+    while (fgets(linha, 300, fp) != NULL){
+        char message[100];
+        char pidzao[10];
+        int time;
+        sscanf(linha,"%[^,],%[^,],%d",pidzao,message,&time);
+        if(pertence(array,pidzao,n)>0){
+            count += time;
+        }
+    }
+        snprintf(buffer, sizeof(buffer), "%d ms\n",count);
+        write(writefifo, buffer, strlen(buffer) + 1);
+}
+
+
 void execute(int fifo, char buffer[]){
     
     //trocar o 10 para uma funçao que conta o numero de espaços
@@ -112,6 +172,41 @@ int main(int argc, char* argv[]){
                 printFile(datafile);//ver o q esta escrito no file
                 _exit(1);
             }
+        }else if(OP == 4){
+            puts("STATS-TIME");
+            tamanho = messageSize(fifo);
+            NbytesRead = read(fifo, buffer, tamanho);
+            buffer[NbytesRead] = '\0';
+            int pid;
+            sscanf(buffer, "%d,%s",&pid, message);
+            pid_t filho = fork();
+            if(filho == 0){
+                int writefifo = open(fileName(pid), O_WRONLY);
+                int n = contapid(message);
+                timestats(arraypid(message,n),n,datafile,writefifo);
+                _exit(1);
+            }
+        }else if(OP == 5){
+            puts("STATS-COMMAND");
+            tamanho = messageSize(fifo);
+            int pid = get_pid(fifo, tamanho);
+            pid_t filho = fork();
+            if(filho == 0){
+                activity(pid, tempfile);
+                printFile(datafile);//ver o q esta escrito no file
+                _exit(1);
+            }
+        }else if(OP == 6){
+            puts("STATS-UNIQ");
+            tamanho = messageSize(fifo);
+            int pid = get_pid(fifo, tamanho);
+            pid_t filho = fork();
+            if(filho == 0){
+                activity(pid, tempfile);
+                printFile(datafile);//ver o q esta escrito no file
+                _exit(1);
+            }
+        
         }else if(OP == 9){
             puts("FIM de Conexão!!"); //alguam coisa foi colocada no pipe
             tamanho = messageSize(fifo);

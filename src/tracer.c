@@ -10,6 +10,40 @@
 #include "mensagem/mensagem.h"
 #include "fileWritting/fileWritting.h"
 
+void reciveStats(int fifo){
+
+    int NbytesRead;
+    char buffer[20];
+    while((NbytesRead = read(fifo, buffer, 20)) > 0){
+        buffer[NbytesRead] = '\0';
+        write(1, buffer, strlen(buffer) + 1);
+    }
+}
+
+
+
+char* juntapids(char* argv[], int n) {
+    char* buffer = malloc(BUFFER_SIZE);
+
+    buffer[0] = '\0';
+
+    for (int i = 0; i < n; i++) {
+        strcat(buffer, argv[i+2]);
+        strcat(buffer, ",");
+    }
+    buffer[strlen(buffer)-1] = '\0';
+    return buffer;
+}
+
+
+void sendStats(int fifo, int pid,int tag,char* msg){
+    char buffer[BUFFER_SIZE];
+    
+    snprintf(buffer, sizeof(buffer), "%d%03ld%d,%s", tag, strlen(msg) + 1 + digitCount(pid) + 1 , pid,msg);
+    write(fifo, buffer, strlen(buffer) + 1);
+    
+}
+
 int main(int argc, char* argv[]){
 
     if(argc < 2){
@@ -56,7 +90,18 @@ int main(int argc, char* argv[]){
         reciveStatus(readfifo);
         close(readfifo);
 
-    }
+    }else if(strcmp(argv[1], "stats-time") == 0){
+        int pid = getpid();
+        if ((f = mkfifo(fileName(pid),0666)) < 0) puts("ERRO!!!! pipe ja existe!");
+        int pids = argc - 2;
+        char* pidstr = juntapids(argv,pids);
+        //puts("Pipe de leitura aberto!!");
+        sendStats(fifo, pid,4,pidstr);
+
+        int readfifo = open(fileName(pid), O_RDONLY);
+        reciveStats(readfifo);
+        close(readfifo);
+        }
     //else outros casos
     close(fifo);
     return 0;
