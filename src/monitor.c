@@ -23,6 +23,55 @@ bool pertence(char** array,char* pid,int n){
     return existe;
 }
 
+void statsuniq(char** array,int n,char* fname,int writefifo){
+    FILE *fp = fopen(fname, "r");
+    if (fp == NULL) {
+        printf("Erro ao abrir arquivo\n");
+        exit(1);
+    }
+    char buffer[300];
+    char linha[300];
+    while (fgets(linha, 300, fp) != NULL){
+        char message[100];
+        char pidzao[10];
+        int time;
+        sscanf(linha,"%[^,],%[^,],%d",pidzao,message,&time);
+        if((pertence(array,pidzao,n)>0)){  
+        snprintf(buffer, sizeof(buffer), "%03ld%s",strlen(message) + 1, message);
+        printf("%s\n",buffer);  
+        write(writefifo, buffer, strlen(buffer) + 1);
+        }
+    }
+    fclose(fp);
+    close(writefifo);
+}
+
+void procuracomando(char** array,int n,char* fname,int writefifo){
+    int count = 0;
+
+    FILE *fp = fopen(fname, "r");
+    if (fp == NULL) {
+        printf("Erro ao abrir arquivo\n");
+        exit(1);
+    }
+    char buffer[300];
+    char linha[300];
+    while (fgets(linha, 300, fp) != NULL){
+        char message[100];
+        char pidzao[10];
+        int time;
+        sscanf(linha,"%[^,],%[^,],%d",pidzao,message,&time);
+        if((pertence(array,pidzao,n)>0)&&(strcmp(array[0],message)==0)){
+            count++;
+        }
+    }
+        snprintf(buffer, sizeof(buffer), "%s was executed %d times\n",array[0],count);
+        write(writefifo, buffer, strlen(buffer) + 1);
+        fclose(fp);
+     close(writefifo);
+}
+
+
 int contapid(char* pids){
     int count = 1;
     for(int i =0;i<strlen(pids);i++){
@@ -68,6 +117,8 @@ void timestats(char** array,int n,char* fname,int writefifo){
     }
         snprintf(buffer, sizeof(buffer), "%d ms\n",count);
         write(writefifo, buffer, strlen(buffer) + 1);
+        fclose(fp);
+    close(writefifo);
 }
 
 
@@ -189,21 +240,30 @@ int main(int argc, char* argv[]){
         }else if(OP == 5){
             puts("STATS-COMMAND");
             tamanho = messageSize(fifo);
-            int pid = get_pid(fifo, tamanho);
+            NbytesRead = read(fifo, buffer, tamanho);
+            buffer[NbytesRead] = '\0';
+            int pid;
+            sscanf(buffer, "%d,%s",&pid, message);
             pid_t filho = fork();
             if(filho == 0){
-                activity(pid, tempfile);
-                printFile(datafile);//ver o q esta escrito no file
+                int writefifo = open(fileName(pid), O_WRONLY);
+                int n = contapid(message);
+                procuracomando(arraypid(message,n),n,datafile,writefifo);
                 _exit(1);
             }
+            
         }else if(OP == 6){
             puts("STATS-UNIQ");
             tamanho = messageSize(fifo);
-            int pid = get_pid(fifo, tamanho);
+            NbytesRead = read(fifo, buffer, tamanho);
+            buffer[NbytesRead] = '\0';
+            int pid;
+            sscanf(buffer, "%d,%s",&pid, message);
             pid_t filho = fork();
             if(filho == 0){
-                activity(pid, tempfile);
-                printFile(datafile);//ver o q esta escrito no file
+                int writefifo = open(fileName(pid), O_WRONLY);
+                int n = contapid(message);
+                statsuniq(arraypid(message,n),n,datafile,writefifo);
                 _exit(1);
             }
         

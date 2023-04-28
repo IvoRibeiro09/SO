@@ -13,8 +13,8 @@
 void reciveStats(int fifo){
 
     int NbytesRead;
-    char buffer[20];
-    while((NbytesRead = read(fifo, buffer, 20)) > 0){
+    char buffer[50];
+    while((NbytesRead = read(fifo, buffer, 50)) > 0){
         buffer[NbytesRead] = '\0';
         write(1, buffer, strlen(buffer) + 1);
     }
@@ -100,6 +100,28 @@ int main(int argc, char* argv[]){
 
         int readfifo = open(fileName(pid), O_RDONLY);
         reciveStats(readfifo);
+        close(readfifo);
+    }else if(strcmp(argv[1], "stats-command") == 0){
+        int pid = getpid();
+        if ((f = mkfifo(fileName(pid),0666)) < 0) puts("ERRO!!!! pipe ja existe!");
+        int pids = argc - 2;
+        char* pidstr = juntapids(argv,pids);
+        //puts("Pipe de leitura aberto!!");
+        sendStats(fifo, pid,5,pidstr);
+
+        int readfifo = open(fileName(pid), O_RDONLY);
+        reciveStats(readfifo);
+        close(readfifo);
+    }else if(strcmp(argv[1], "stats-uniq") == 0){
+        int pid = getpid();
+        if ((f = mkfifo(fileName(pid),0666)) < 0) puts("ERRO!!!! pipe ja existe!");
+        int pids = argc - 2;
+        char* pidstr = juntapids(argv,pids);
+        //puts("Pipe de leitura aberto!!");
+        sendStats(fifo, pid,6,pidstr);
+
+        int readfifo = open(fileName(pid), O_RDONLY);
+        reciveStatus(readfifo);
         close(readfifo);
         }
     //else outros casos
