@@ -10,18 +10,6 @@
 #include "mensagem/mensagem.h"
 #include "fileWritting/fileWritting.h"
 
-void reciveStats(int fifo){
-
-    int NbytesRead;
-    char buffer[50];
-    while((NbytesRead = read(fifo, buffer, 50)) > 0){
-        buffer[NbytesRead] = '\0';
-        write(1, buffer, strlen(buffer) + 1);
-    }
-}
-
-
-
 char* juntapids(char* argv[], int n) {
     char* buffer = malloc(BUFFER_SIZE);
 
@@ -35,15 +23,6 @@ char* juntapids(char* argv[], int n) {
     return buffer;
 }
 
-
-void sendStats(int fifo, int pid,int tag,char* msg){
-    char buffer[BUFFER_SIZE];
-    
-    snprintf(buffer, sizeof(buffer), "%d%03ld%d,%s", tag, strlen(msg) + 1 + digitCount(pid) + 1 , pid,msg);
-    write(fifo, buffer, strlen(buffer) + 1);
-    
-}
-
 int main(int argc, char* argv[]){
 
     if(argc < 2){
@@ -52,6 +31,7 @@ int main(int argc, char* argv[]){
     }
 
     int fifo = open(PIPEGLOBAL, O_RDWR), f;
+    int fifo2 = open(PIPEGLOBAL2, O_RDWR);
 
     if(strcmp(argv[1], "execute") == 0){
         struct timeval start, end;
@@ -87,44 +67,25 @@ int main(int argc, char* argv[]){
         sendStatus(fifo, pid);
 
         int readfifo = open(fileName(pid), O_RDONLY);
-        reciveStatus(readfifo);
+        reciveHeadMessage(readfifo);
         close(readfifo);
 
-    }else if(strcmp(argv[1], "stats-time") == 0){
+    }else if(strcmp(argv[1], "stats-time") == 0 || strcmp(argv[1], "stats-command") == 0 || strcmp(argv[1], "stats-uniq") == 0){
         int pid = getpid();
         if ((f = mkfifo(fileName(pid),0666)) < 0) puts("ERRO!!!! pipe ja existe!");
-        int pids = argc - 2;
-        char* pidstr = juntapids(argv,pids);
-        //puts("Pipe de leitura aberto!!");
-        sendStats(fifo, pid,4,pidstr);
-
+        
+        int tipo, Npids = argc - 2;
+        if(strcmp(argv[1], "stats-command") == 0) tipo = 5;
+        else if(strcmp(argv[1], "stats-time") == 0) tipo = 4;
+        else if(strcmp(argv[1], "stats-uniq") == 0) tipo = 6;
+ 
+        sendStats(fifo2, tipo, pid, juntapids(argv, Npids));
         int readfifo = open(fileName(pid), O_RDONLY);
-        reciveStats(readfifo);
+        reciveHeadMessage(readfifo);
         close(readfifo);
-    }else if(strcmp(argv[1], "stats-command") == 0){
-        int pid = getpid();
-        if ((f = mkfifo(fileName(pid),0666)) < 0) puts("ERRO!!!! pipe ja existe!");
-        int pids = argc - 2;
-        char* pidstr = juntapids(argv,pids);
-        //puts("Pipe de leitura aberto!!");
-        sendStats(fifo, pid,5,pidstr);
-
-        int readfifo = open(fileName(pid), O_RDONLY);
-        reciveStats(readfifo);
-        close(readfifo);
-    }else if(strcmp(argv[1], "stats-uniq") == 0){
-        int pid = getpid();
-        if ((f = mkfifo(fileName(pid),0666)) < 0) puts("ERRO!!!! pipe ja existe!");
-        int pids = argc - 2;
-        char* pidstr = juntapids(argv,pids);
-        //puts("Pipe de leitura aberto!!");
-        sendStats(fifo, pid,6,pidstr);
-
-        int readfifo = open(fileName(pid), O_RDONLY);
-        reciveStatus(readfifo);
-        close(readfifo);
-        }
+    }
     //else outros casos
     close(fifo);
+    close(fifo2);
     return 0;
 }

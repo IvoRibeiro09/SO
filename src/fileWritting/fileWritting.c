@@ -35,7 +35,7 @@ void printFile(char* fname){
     fclose(fp);
 }
 
-int updateLine(int pid, char* temp_file, char* filename, long int end_sec, long int end_milisec){
+int updateLine(int pid, char* temp_file, char* caminho, long int end_sec, long int end_milisec){
     FILE* ftemp = fopen(temp_file, "r");
     if (ftemp == NULL) {
         printf("Erro ao abrir o arquivo.\n");
@@ -71,7 +71,7 @@ int updateLine(int pid, char* temp_file, char* filename, long int end_sec, long 
         return -1 ;
     }
 
-    FILE* f = fopen(filename, "a");
+    FILE* f = fopen(fileWpath(pid, caminho), "a");
     if (f == NULL) {
         printf("Erro ao abrir o arquivo.\n");
         return -1;
@@ -83,6 +83,12 @@ int updateLine(int pid, char* temp_file, char* filename, long int end_sec, long 
     fclose(f);
 
     return time;
+}
+
+char* fileWpath(int pid, char* caminho){
+    char buffer[strlen(caminho)+11];
+    snprintf(buffer, sizeof(buffer), "%s%06d.txt", caminho, pid);
+    return strdup(buffer);
 }
 
 int openFile(char* fname){
@@ -156,9 +162,10 @@ int get_pid(int fifo, int tamanho){
 int numberSpaces(char* string){
   int c=0;
   for(int i=0;i<strlen(string);i++){
-    if(string[i] ==' '){
+    if(string[i] == ' '){
       c++;
     }
   }
   return c;
 }
+

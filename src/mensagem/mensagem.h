@@ -4,6 +4,7 @@
 #define BUFFER_SIZE 512
 #define MAX_ARGS_CARACTERS 490
 #define PIPEGLOBAL "logs"
+#define PIPEGLOBAL2 "logs2"
 
 int digitCount(int n);
 
@@ -21,6 +22,8 @@ void reciveMessage(int fifo);
 
 void sendStatus(int fifo, int pid);
 
-void reciveStatus(int fifo);
+void sendStats(int fifo, int tipo, int pid_tracer, char* msg);
+
+void reciveHeadMessage(int fifo);
 
 #endif

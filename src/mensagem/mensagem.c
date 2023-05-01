@@ -8,11 +8,9 @@
 #include <stdlib.h>
 #include "mensagem.h"
 
-int digitCount(int n)
-{
+int digitCount(int n){
     int count = 0;
-    while(n > 0)
-    {
+    while(n > 0){
         count++;
         n = n/10; 
     }
@@ -72,8 +70,15 @@ void sendStatus(int fifo, int pid){
     
 }
 
-void reciveStatus(int fifo){
+void sendStats(int fifo, int tipo, int pid_tracer, char* msg){
+    char buffer[BUFFER_SIZE];
+    
+    snprintf(buffer, sizeof(buffer), "%d%03ld%d,%s", tipo, digitCount(pid_tracer) + strlen(msg) + 4, pid_tracer, msg);
+    write(fifo, buffer, strlen(buffer) + 1);
+    
+}
 
+void reciveHeadMessage(int fifo){
     int NbytesRead;
     char tamanho[4], buffer[BUFFER_SIZE];
     while((NbytesRead = read(fifo, tamanho, 3)) > 0){

@@ -9,6 +9,8 @@ void printFile();
 
 int openFile(char* fname);
 
+char* fileWpath(int pid, char* caminho);
+
 char* cleanArguments(char* input);
 
 void activity(int pid, char* fname);
