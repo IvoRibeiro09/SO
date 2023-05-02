@@ -22,7 +22,7 @@ int numberVirgulas(char* string){
 }
 
 int* arraypid(char* msg, int n) {
-  int* array = malloc(n+1 * sizeof(int));
+  int* array = malloc((n + 1) * sizeof(int));
   int i = 0;
   char* aux = strtok(msg, ",");
   array[i] = atoi(aux);
@@ -38,19 +38,20 @@ int* arraypid(char* msg, int n) {
 
 void timestats(int pid_tracer, char* caminho, int* pids){
     int writefifo = open(fileName(pid_tracer), O_WRONLY);
-
-    int i = 0;
+    char buffer[BUFFER_SIZE];
+    int i = 0, count = 0;
     while(pids[i]){
         FILE* fp = fopen(fileWpath(pids[i], caminho), "r");
-        char linha[300], msg[200], buffer[200];
+        char linha[300], msg[200];
         int pid, time;
         fgets(linha, 300, fp);
         sscanf(linha, "%d,%[^,],%d", &pid, msg, &time);
-        snprintf(buffer, sizeof(buffer), "%03d%d ms\n", digitCount(time) + 4, time);
-        write(writefifo, buffer, strlen(buffer) + 1);
+        count = count + time;
         i++;
         fclose(fp);
     }
+    snprintf(buffer, sizeof(buffer), "%03dTotal execution time is %d ms\n", digitCount(count) + 30, count);
+    write(writefifo, buffer, strlen(buffer) + 1);
     close(writefifo);
 }
 
@@ -68,7 +69,7 @@ void procuracomando(int pid_tracer, char* caminho, char* cmd, int* pids){
         fclose(fp);
     }
 
-    snprintf(buffer, sizeof(buffer), "%s was executed %d times\n", cmd, count);
+    snprintf(buffer, sizeof(buffer), "%03ld%s was executed %d times\n", digitCount(count) + strlen(cmd) + 23, cmd, count);
     write(writefifo, buffer, strlen(buffer) + 1);
     close(writefifo);
 }
@@ -90,7 +91,6 @@ void statsuniq(int pid_tracer, char* caminho, int* pids){
     }
     close(writefifo);
 }
-
 
 void execute(int fifo, char buffer[]){
     
@@ -114,12 +114,12 @@ void execute(int fifo, char buffer[]){
 
 int main(int argc, char* argv[]){
 
-    if(argc < 3){
+    if(argc < 2){
         puts("ERROR few arguments!!!");
         return -1;
     }
     char* caminho = argv[1];
-    char* tempfile = argv[2];
+    char* tempfile = "temp.csv";
     if(openFile(tempfile) < 0) return -1;
 
     int f;
@@ -206,7 +206,7 @@ int main(int argc, char* argv[]){
             }else puts("ERROR");  
         }
         close(fifo);
-    }else {
+    }else{
         int fifo = open(PIPEGLOBAL2, O_RDWR);
         while((NbytesRead = read(fifo, option, 1)) > 0){
             option[NbytesRead] = '\0';
