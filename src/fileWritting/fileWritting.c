@@ -102,29 +102,6 @@ int openFile(char* fname){
     return 0;
 }   
 
-char* cleanArguments(char* input){
-    char modified[strlen(input) + 1]; 
-    int i = 0, j = 0;
-    while (input[i] != '\0') {
-        while(input[i] != ' ' && input[i] != '\0'){
-          modified[j++] = input[i];
-          i++;
-        }
-        while(input[i] != '|' && input[i] != '\0'){
-          i++;
-        }
-        if(input[i] != '\0'){
-          modified[j++] = ' ';
-          modified[j++] = '|';
-          modified[j++] = ' ';
-          i++;
-          if(input[i] == ' ') i++;
-        }
-    }
-    modified[j] = '\0';
-    return strdup(modified);
-}
-
 void activity(int pid, char* fname){
     int writefifo = open(fileName(pid), O_WRONLY);
 
@@ -151,21 +128,3 @@ void activity(int pid, char* fname){
     fclose(fp);
     close(writefifo);
 }
-
-int get_pid(int fifo, int tamanho){
-    char pid[tamanho + 1];
-    int n = read(fifo, pid, tamanho);
-    pid[n] = '\0';
-    return atoi(pid);
-}
-
-int numberSpaces(char* string){
-  int c=0;
-  for(int i=0;i<strlen(string);i++){
-    if(string[i] == ' '){
-      c++;
-    }
-  }
-  return c;
-}
-

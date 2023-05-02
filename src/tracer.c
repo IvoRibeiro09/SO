@@ -9,19 +9,7 @@
 #include <sys/time.h>
 #include "mensagem/mensagem.h"
 #include "fileWritting/fileWritting.h"
-
-char* juntapids(char* argv[], int n) {
-    char* buffer = malloc(BUFFER_SIZE);
-
-    buffer[0] = '\0';
-
-    for (int i = 0; i < n; i++) {
-        strcat(buffer, argv[i+2]);
-        strcat(buffer, ",");
-    }
-    buffer[strlen(buffer)-1] = '\0';
-    return buffer;
-}
+#include "auxFunc/auxFunc.h"
 
 int main(int argc, char* argv[]){
 

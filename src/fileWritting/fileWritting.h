@@ -11,12 +11,8 @@ int openFile(char* fname);
 
 char* fileWpath(int pid, char* caminho);
 
-char* cleanArguments(char* input);
-
 void activity(int pid, char* fname);
 
 int get_pid(int fifo, int tamanho);
-
-int numberSpaces(char* string);
 
 #endif

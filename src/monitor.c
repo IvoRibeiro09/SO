@@ -10,31 +10,7 @@
 #include <stdbool.h>
 #include "mensagem/mensagem.h"
 #include "fileWritting/fileWritting.h"
-
-int numberVirgulas(char* string){
-  int c=0;
-  for(int i=0;i<strlen(string);i++){
-    if(string[i] == ','){
-      c++;
-    }
-  }
-  return c;
-}
-
-int* arraypid(char* msg, int n) {
-  int* array = malloc((n + 1) * sizeof(int));
-  int i = 0;
-  char* aux = strtok(msg, ",");
-  array[i] = atoi(aux);
-  while (aux != NULL) {
-    aux = strtok(NULL, ",");
-    if (aux != NULL) {
-      i++;
-      array[i] = atoi(aux);
-    }
-  }
-  return array; 
-}
+#include "auxFunc/auxFunc.h"
 
 void timestats(int pid_tracer, char* caminho, int* pids){
     int writefifo = open(fileName(pid_tracer), O_WRONLY);
@@ -138,7 +114,6 @@ int main(int argc, char* argv[]){
             option[NbytesRead] = '\0';
             OP = atoi(option);
             if(OP == 1 || OP == 2){
-                puts("Nova Conexão!!");
                 tamanho = messageSize(fifo);
                 NbytesRead = read(fifo, buffer, tamanho);
                 buffer[NbytesRead] = '\0';
@@ -191,7 +166,7 @@ int main(int argc, char* argv[]){
                 //printFile(datafile);//ver o q esta escrito no file
                 
             }else if(OP == 9){
-                puts("FIM de Conexão!!"); //alguam coisa foi colocada no pipe
+                //alguam coisa foi colocada no pipe
                 tamanho = messageSize(fifo);
                 NbytesRead = read(fifo, buffer, tamanho);
                 buffer[NbytesRead] = '\0';
@@ -202,7 +177,7 @@ int main(int argc, char* argv[]){
 
                 int time = updateLine(pid, tempfile, caminho, end_sec, end_milisec);//return time
 
-                printf("PID %d TERMINOU!!\nEnded in %d ms\n", pid, time);
+                printf("PID %d TERMINOU em %d ms\n", pid, time);
             }else puts("ERROR");  
         }
         close(fifo);

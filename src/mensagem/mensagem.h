@@ -3,8 +3,6 @@
 
 #define BUFFER_SIZE 512
 #define MAX_ARGS_CARACTERS 490
-#define PIPEGLOBAL "logs"
-#define PIPEGLOBAL2 "logs2"
 
 int digitCount(int n);
 
