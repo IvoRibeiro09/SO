@@ -85,7 +85,10 @@ void execute(int fifo, char buffer[]){
     if(filho == 0){
         dup2(fifo, 1);//mudar de print do ecra para print no fifo
         execvp(argv[0], argv);//executar os comandos
-    }
+    } 
+    
+    int status;
+    wait(&status);
 }
 
 int main(int argc, char* argv[]){
