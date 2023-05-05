@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "mensagem/mensagem.h"
+#include "hTable/hTable.h"
 #include "fileWritting/fileWritting.h"
 #include "auxFunc/auxFunc.h"
 
