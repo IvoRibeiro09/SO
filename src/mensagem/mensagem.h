@@ -1,5 +1,9 @@
 #ifndef MENSAGEM_
 #define MENSAGEM_
+#include <string.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define BUFFER_SIZE 512
 #define MAX_ARGS_CARACTERS 490

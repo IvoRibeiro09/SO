@@ -1,11 +1,3 @@
-#include <stddef.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include "mensagem.h"
 
 int digitCount(int n){
@@ -75,7 +67,7 @@ void sendStats(int fifo, int tipo, int pid_tracer, char* msg){
     
     snprintf(buffer, sizeof(buffer), "%d%03ld%d,%s", tipo, digitCount(pid_tracer) + strlen(msg) + 4, pid_tracer, msg);
     write(fifo, buffer, strlen(buffer) + 1);
-    
+    //write(1, buffer, strlen(buffer) + 1);
 }
 
 void reciveHeadMessage(int fifo){

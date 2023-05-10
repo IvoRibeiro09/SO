@@ -1,32 +1,4 @@
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include "auxFunc.h"
-#include "../mensagem/mensagem.h"
-
-char* cleanArguments(char* input){
-    char modified[strlen(input) + 1]; 
-    int i = 0, j = 0;
-    while (input[i] != '\0') {
-        while(input[i] != ' ' && input[i] != '\0'){
-          modified[j++] = input[i];
-          i++;
-        }
-        while(input[i] != '|' && input[i] != '\0'){
-          i++;
-        }
-        if(input[i] != '\0'){
-          modified[j++] = ' ';
-          modified[j++] = '|';
-          modified[j++] = ' ';
-          i++;
-          if(input[i] == ' ') i++;
-        }
-    }
-    modified[j] = '\0';
-    return strdup(modified);
-}
 
 int numberSpaces(char* string){
   int c=0;
@@ -61,20 +33,28 @@ int numberVirgulas(char* string){
   return c;
 }
 
-int* arraypid(char* msg, int n){
-  int* array = malloc((n + 1) * sizeof(int));
-  int i = 0;
-  char* aux = strtok(msg, ",");
-  array[i] = atoi(aux);
-  while (aux != NULL) {
-    aux = strtok(NULL, ",");
-    if (aux != NULL) {
-      i++;
-      array[i] = atoi(aux);
+int numberBar(char* string){
+  int c=0;
+  for(int i=0;i<strlen(string);i++){
+    if(string[i] == '|'){
+      c++;
     }
   }
-  return array; 
+  return c;
 }
+
+int* arraypid(char* msg, int n) {
+  int* array = malloc(n * sizeof(int));
+  int i = 0;
+  char* aux = strtok(msg, ",");
+  while (aux != NULL && i < n) {
+    array[i] = atoi(aux);
+    aux = strtok(NULL, ",");
+    i++;
+  }
+  return array;
+}
+
 
 int get_pid(int fifo, int tamanho){
     char pid[tamanho + 1];
